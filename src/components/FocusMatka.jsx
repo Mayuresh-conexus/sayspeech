@@ -6,7 +6,7 @@ import { playSound } from '../utils/audioPlayer';
 import Confetti from 'react-confetti';
 
 const FocusMatka = ({ word, onGrade, onClose }) => {
-  const [sequence, setSequence] = useState('zooming');
+  const [sequence, setSequence] = useState('focusing');
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -15,34 +15,41 @@ const FocusMatka = ({ word, onGrade, onClose }) => {
 
     // 1. Zoom to center takes 500ms (handled by framer layout transition, but we wait)
     timeouts.push(setTimeout(() => {
-      setSequence('swinging');
+      setSequence('anticipation');
       playSound('creak');
       
-      // 2. Swing: 400ms
+      // 2. Anticipation swing: 300ms
       timeouts.push(setTimeout(() => {
         setSequence('stone_throw');
         playSound('throw');
         
         // 3. Stone throw: 400ms
         timeouts.push(setTimeout(() => {
-          setSequence('breaking');
-          playSound('break');
-          setTimeout(() => playSound('dust'), 200); // Dust sound shortly after break
+          setSequence('impact');
+          playSound('hit');
           
-          // 4. Break sequence: 800ms
+          // 4. Impact flash/shake: 150ms
           timeouts.push(setTimeout(() => {
-            setSequence('reveal_card');
+            setSequence('breaking');
+            playSound('break');
+            setTimeout(() => playSound('dust'), 200);
             
-            // 5. Card reveal: 500ms
+            // 5. Break sequence: 700ms
             timeouts.push(setTimeout(() => {
-              setSequence('grading');
-            }, 500));
+              setSequence('reveal_card');
+              
+              // 6. Card reveal: 600ms
+              timeouts.push(setTimeout(() => {
+                setSequence('grading');
+              }, 600));
 
-          }, 800));
+            }, 700));
+
+          }, 150));
 
         }, 400));
 
-      }, 400));
+      }, 300));
 
     }, 500));
 
@@ -50,18 +57,26 @@ const FocusMatka = ({ word, onGrade, onClose }) => {
   }, []);
 
   const handleGrade = (isCorrect) => {
+    setSequence(isCorrect ? 'submit_correct' : 'submit_incorrect');
+    
     if (isCorrect) {
       playSound('correct');
       setShowConfetti(true);
       setTimeout(() => {
-        onGrade(isCorrect);
-        onClose();
-      }, 2500); // Wait for confetti before closing
+        setSequence('closing');
+        setTimeout(() => {
+          onGrade(isCorrect);
+          onClose();
+        }, 500); // Wait for closing animation
+      }, 2000); // Wait before closing
     } else {
       playSound('incorrect');
       setTimeout(() => {
-        onGrade(isCorrect);
-        onClose();
+        setSequence('closing');
+        setTimeout(() => {
+          onGrade(isCorrect);
+          onClose();
+        }, 500); // Wait for closing animation
       }, 800);
     }
   };
@@ -70,28 +85,28 @@ const FocusMatka = ({ word, onGrade, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Blurred Dark Backdrop */}
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+        animate={sequence === 'closing' ? { opacity: 0, backdropFilter: "blur(0px)" } : { opacity: 1, backdropFilter: "blur(8px)" }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="absolute inset-0 bg-slate-900/45"
         onClick={() => { /* Prevent closing on click outside during animation */ }}
       />
 
-      {/* Screen Shake Container during breaking */}
+      {/* Screen Shake Container during impact */}
       <motion.div
         className="relative z-10 w-full max-w-md h-[500px] flex items-center justify-center"
-        animate={sequence === 'breaking' ? { x: [-10, 10, -10, 10, 0], y: [-5, 5, -5, 5, 0] } : { x: 0, y: 0 }}
-        transition={{ duration: 0.4 }}
+        animate={sequence === 'impact' ? { x: [-10, 10, -8, 8, 0], y: [-5, 5, -4, 4, 0] } : { x: 0, y: 0 }}
+        transition={{ duration: 0.15 }}
       >
         {/* Glow behind the pot */}
         <AnimatePresence>
-          {sequence === 'breaking' && (
+          {(sequence === 'impact' || sequence === 'breaking') && (
             <motion.div 
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0 m-auto w-64 h-64 bg-yellow-400/40 blur-3xl rounded-full"
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 m-auto w-64 h-64 bg-yellow-400/80 blur-3xl rounded-full"
             />
           )}
         </AnimatePresence>
@@ -100,6 +115,8 @@ const FocusMatka = ({ word, onGrade, onClose }) => {
         <motion.div 
           layoutId={`matka-${word.tileId}`}
           className="absolute inset-0 flex items-center justify-center"
+          animate={sequence === 'closing' ? { scale: 0.8, opacity: 0 } : { scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           <MatkaBreakAnimation state={sequence} />
         </motion.div>
@@ -113,14 +130,14 @@ const FocusMatka = ({ word, onGrade, onClose }) => {
 
         {/* Success Confetti */}
         {showConfetti && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-50">
             <Confetti 
-              width={600} 
-              height={600} 
+              width={window.innerWidth} 
+              height={window.innerHeight} 
               recycle={false} 
-              numberOfPieces={200} 
-              gravity={0.2}
-              initialVelocityY={20}
+              numberOfPieces={300} 
+              gravity={0.25}
+              initialVelocityY={25}
             />
           </div>
         )}

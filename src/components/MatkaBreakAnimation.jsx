@@ -2,44 +2,53 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MatkaBreakAnimation = ({ state }) => {
-  const isBroken = state === 'reveal_card' || state === 'grading' || state === 'completed';
+  const isBroken = ['reveal_card', 'grading', 'submit_correct', 'submit_incorrect', 'closing', 'completed'].includes(state);
   const isBreaking = state === 'breaking';
+  const isImpact = state === 'impact';
 
   const potVariants = {
-    zooming: { rotate: 0, scale: 1 },
-    swinging: { 
-      rotate: [0, -15, 15, -10, 10, -5, 5, 0], 
-      transition: { duration: 0.8, ease: "easeInOut" } 
+    focusing: { rotate: 0, scale: 1 },
+    anticipation: { 
+      rotate: [0, -5, 5, -3, 3, 0],
+      transition: { duration: 0.3, ease: "easeInOut" }
     },
     stone_throw: { rotate: 0 },
-    breaking: { scale: 1.1, opacity: 0, transition: { duration: 0.1 } }, // Slight bulge before disappearing
+    impact: { scale: 1.05, opacity: 1, filter: "brightness(1.5)" },
+    breaking: { scale: 1.15, opacity: 0, transition: { duration: 0.1 } }, 
     broken: { opacity: 0 }
   };
 
   const stoneVariants = {
-    hidden: { x: -400, y: -50, opacity: 0, scale: 0.5 },
+    hidden: { x: -500, y: -100, opacity: 0, scale: 0.5, filter: "blur(0px)" },
     stone_throw: { 
-      x: [-400, -20], 
-      y: [-50, 40], 
+      x: [-500, -20], 
+      y: [-100, 40], 
       opacity: [0, 1, 1, 0],
       rotate: [0, 720],
       scale: [0.5, 1.2, 1, 0.5],
+      filter: ["blur(0px)", "blur(8px)", "blur(12px)", "blur(0px)"],
       transition: { duration: 0.4, ease: "easeIn" } 
     }
+  };
+
+  const crackVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    impact: { pathLength: 1, opacity: 1, transition: { duration: 0.1 } },
+    breaking: { opacity: 0, transition: { duration: 0.1 } }
   };
 
   const shardVariants = {
     hidden: { opacity: 0, x: 0, y: 0, scale: 1, rotate: 0 },
     breaking: (i) => {
       const angle = (Math.random() * Math.PI * 2);
-      const distance = Math.random() * 200 + 80;
+      const distance = Math.random() * 250 + 100;
       return {
-        opacity: [1, 1, 0],
+        opacity: [0, 1, 1, 0],
         x: Math.cos(angle) * distance,
         y: Math.sin(angle) * distance + 50,
         rotate: (Math.random() - 0.5) * 1080,
         scale: Math.random() * 1.5 + 0.5,
-        transition: { duration: 0.9, ease: "easeOut" }
+        transition: { duration: 0.9, ease: "easeOut", times: [0, 0.1, 0.8, 1] }
       };
     }
   };
@@ -48,13 +57,13 @@ const MatkaBreakAnimation = ({ state }) => {
     hidden: { opacity: 0, x: 0, y: 0, scale: 0 },
     breaking: (i) => {
       const angle = (Math.random() * Math.PI * 2);
-      const distance = Math.random() * 150;
+      const distance = Math.random() * 200;
       return {
-        opacity: [0, 0.8, 0],
+        opacity: [0, 0.9, 0],
         x: Math.cos(angle) * distance,
         y: Math.sin(angle) * distance,
-        scale: [0, Math.random() * 3 + 1.5, 0],
-        transition: { duration: 1.2, ease: "easeOut" }
+        scale: [0, Math.random() * 4 + 2, 0],
+        transition: { duration: 1.2, ease: "easeOut", delay: 0.1 } // Stagger dust slightly after shards
       };
     }
   };
@@ -62,29 +71,45 @@ const MatkaBreakAnimation = ({ state }) => {
   return (
     <div className="relative w-[300px] h-[350px] flex items-center justify-center">
       
-      {/* Spotlight Effect (Only active when zooming/swinging/stone) */}
-      <AnimatePresence>
-        {!isBroken && !isBreaking && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute -top-10 w-96 h-[500px] bg-gradient-to-b from-white/40 via-yellow-200/20 to-transparent blur-3xl rounded-full z-0 pointer-events-none"
-          />
-        )}
-      </AnimatePresence>
-
       {/* Hanging Rope */}
       {!isBroken && !isBreaking && (
-        <svg className="absolute -top-32 left-1/2 -translate-x-1/2 w-4 h-40 z-0" viewBox="0 0 10 100">
+        <motion.svg 
+          className="absolute -top-32 left-1/2 -translate-x-1/2 w-4 h-40 z-0 origin-top" 
+          viewBox="0 0 10 100"
+          animate={state === 'anticipation' ? { rotate: [0, -5, 5, -3, 3, 0] } : { rotate: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           <line x1="5" y1="0" x2="5" y2="100" stroke="#5c3317" strokeWidth="6" strokeDasharray="6,4" />
-        </svg>
+        </motion.svg>
       )}
+
+      {/* Anticipation Particles */}
+      <AnimatePresence>
+        {state === 'anticipation' && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40"
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <motion.div
+                key={`spark-${i}`}
+                initial={{ opacity: 0, y: 0, scale: 0 }}
+                animate={{ opacity: [0, 1, 0], y: -50 - Math.random() * 50, scale: Math.random() * 2 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="absolute top-1/2 left-1/2 w-2 h-2 bg-yellow-200 rounded-full blur-[1px]"
+                style={{ marginLeft: (Math.random() - 0.5) * 100, marginTop: (Math.random() - 0.5) * 100 }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stone */}
       <motion.div 
         className="absolute w-12 h-12 bg-slate-400 rounded-[40%] shadow-inner z-30"
-        style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }} // Irregular stone shape
+        style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
         variants={stoneVariants}
         initial="hidden"
         animate={state === 'stone_throw' ? 'stone_throw' : 'hidden'}
@@ -97,10 +122,9 @@ const MatkaBreakAnimation = ({ state }) => {
         <motion.div
           className="relative z-20 origin-[50%_-100px]"
           variants={potVariants}
-          initial="zooming"
-          animate={state === 'breaking' ? 'breaking' : state}
+          initial="focusing"
+          animate={isBreaking ? 'breaking' : state}
         >
-          {/* Increased size from 150 to 220 */}
           <svg width="220" height="220" viewBox="0 0 100 100" className="drop-shadow-[0_15px_25px_rgba(0,0,0,0.4)]">
             <defs>
               <radialGradient id="potGradMasterDetailed" cx="30%" cy="30%" r="70%">
@@ -125,14 +149,16 @@ const MatkaBreakAnimation = ({ state }) => {
               <path d="M 12 65 Q 50 85 88 65" fill="none" stroke="#f1c40f" strokeWidth="3" strokeDasharray="5,4" />
             </g>
 
-            {/* Impact Cracks (Show only exactly when stone hits, right before disappearing) */}
-            <motion.g
-              initial={{ opacity: 0 }}
-              animate={state === 'breaking' ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.05 }}
-            >
-              <path d="M 30 40 L 40 50 L 35 60 M 40 50 L 50 45 L 60 55 M 50 45 L 55 35" fill="none" stroke="#3e1a00" strokeWidth="2" />
-            </motion.g>
+            {/* Impact Cracks (Show precisely on impact) */}
+            <motion.path 
+              d="M 30 40 L 40 50 L 35 60 M 40 50 L 50 45 L 60 55 M 50 45 L 55 35" 
+              fill="none" 
+              stroke="#3e1a00" 
+              strokeWidth="2.5" 
+              variants={crackVariants}
+              initial="hidden"
+              animate={isImpact ? 'impact' : isBreaking ? 'breaking' : 'hidden'}
+            />
           </svg>
         </motion.div>
       )}

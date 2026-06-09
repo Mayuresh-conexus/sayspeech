@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
 const MatkaCard = ({ word, index, onClick, isHidden }) => {
+  const [isSelected, setIsSelected] = useState(false);
   const isCorrect = word.grade === 'correct';
+
+  const handleClick = () => {
+    if (isSelected) return;
+    setIsSelected(true);
+    setTimeout(() => {
+      onClick();
+      setIsSelected(false);
+    }, 300);
+  };
 
   return (
     <div className={`relative w-[clamp(90px,25vw,140px)] md:w-[clamp(120px,15vw,160px)] aspect-square flex flex-col items-center justify-center ${isHidden ? 'opacity-0 pointer-events-none' : ''}`}>
         
         <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onClick}
+          layoutId={`matka-${word.tileId}`}
+          animate={isSelected ? { scale: 1.08, rotate: [-2, 2, -1, 1, 0], boxShadow: "0 0 30px rgba(250, 204, 21, 0.6)" } : { scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          whileHover={!isSelected ? { scale: 1.05, y: -5 } : {}}
+          whileTap={!isSelected ? { scale: 0.95 } : {}}
+          onClick={handleClick}
           className="relative w-full h-full cursor-pointer bg-white rounded-[2rem] shadow-[0_8px_20px_rgba(0,0,0,0.1)] border-4 border-white/50 flex flex-col items-center justify-center overflow-hidden group"
         >
           {/* Inner inset shadow for 3D effect */}
