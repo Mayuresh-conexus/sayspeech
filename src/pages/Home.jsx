@@ -17,10 +17,10 @@ const Home = () => {
 
   return (
     <div className="min-h-[100dvh] w-full bg-storybook relative overflow-x-hidden flex flex-col items-center justify-center py-10 md:py-0">
-      
+
       {/* Background Environment Layers */}
       <div className="sun-rays opacity-50" />
-      
+
       <div className="hill-layer-2" />
       <div className="hill-layer-1" />
       <div className="sand-layer" />
@@ -125,7 +125,7 @@ const Home = () => {
               START GAME
             </motion.button>
 
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/admin')}
@@ -134,7 +134,7 @@ const Home = () => {
               <div className="absolute inset-0 rounded-full border-4 border-white/20 group-hover:border-white/40 transition-colors pointer-events-none" />
               <Settings size={24} />
               THERAPIST PORTAL
-            </motion.button>
+            </motion.button> */}
 
           </div>
         </div>
